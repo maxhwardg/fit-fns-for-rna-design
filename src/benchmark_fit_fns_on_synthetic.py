@@ -24,7 +24,7 @@ def gc_pcnt(pri):
 def main():
     ap = argparse.ArgumentParser(
         "Benchmarks using an adaptive walk on various fitness functions using random RNA structure puzzles")
-    ap.add_argument("--steps", type=int, default=300,
+    ap.add_argument("--steps", type=int, default=1000,
                     help="Number of mutations to make in the walk")
     ap.add_argument("--processes", type=int, default=1,
                     help="Number of processes to use")
@@ -41,16 +41,17 @@ def main():
                                                                fit_fns.normalised_prob_diff),
                         ('mfe_bpd', fit_fns.mfe_bpd), ('avg_mfe_bpd',
                                                        fit_fns.avg_mfe_bpd), ('min_mfe_bpd', fit_fns.min_mfe_bpd),
-                        ('mfe_hd', fit_fns.mfe_hd), ('avg_mfe_hd', fit_fns.avg_mfe_hd), ('min_mfe_hd', fit_fns.min_mfe_hd)])
+                        ('mfe_hd', fit_fns.mfe_hd), ('avg_mfe_hd',
+                                                     fit_fns.avg_mfe_hd), ('min_mfe_hd', fit_fns.min_mfe_hd),
+                        ('mfe_inf', fit_fns.mfe_inf), ('avg_inf', fit_fns.avg_inf), ('min_mfe_inf', fit_fns.min_mfe_inf)])
     ap.add_argument("--fitness_fns", type=str, default=[], action='append',
                     help=f'Fitness functions to use. Leave empty for all. Should be from {list(all_fit_fns.keys())}')
-    ap.add_argument("--seed", type=int, default=None,
+    ap.add_argument("--seed", type=int, default=0,
                     help="Random seed. Leave empty for no seed.")
 
     args = ap.parse_args()
 
-    if args.seed is not None:
-        random.seed(args.seed)
+    random.seed(args.seed)
 
     if args.fitness_fns == []:
         args.fitness_fns = list(all_fit_fns.keys())
@@ -59,6 +60,19 @@ def main():
     for fn in args.fitness_fns:
         fitness_fns[fn] = all_fit_fns[fn]
 
+    # Generate puzzles
+    seen_dbs = set()
+    epoch_dbs = []
+    for _ in range(args.epochs):
+        rnas = []
+        for _ in range(args.rnas_per_epoch):
+            db = None
+            while db is None or db in seen_dbs:
+                db = make_random_db(args.rna_length, args.window)
+            rnas.append(db)
+        epoch_dbs.append(rnas)
+
+    # Init statistics counters
     gc_pcnt_sum = {}
     fit_fn_solves = {}
     unique_solves = {}
@@ -66,9 +80,9 @@ def main():
         gc_pcnt_sum[name] = 0
         fit_fn_solves[name] = 0
         unique_solves[name] = 0
+
+    # Run adaptive walks
     total_seqs = 0
-    epoch_dbs = [[make_random_db(args.rna_length, args.window) for _ in range(
-        args.rnas_per_epoch)] for _ in range(args.epochs)]
     for epoch in range(args.epochs):
         dbs = epoch_dbs[epoch]
         db_solved = []

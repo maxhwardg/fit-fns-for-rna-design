@@ -1,6 +1,7 @@
 import common
 import vienna
 import RNA
+import math
 
 
 def prob_diff(ctx, ss):
@@ -53,6 +54,43 @@ def hamming_dist(db1, db2):
     return cnt
 
 
+def inv_interaction_network_fidelity(pred, true):
+    m1 = common.db_to_matching(pred)
+    m2 = common.db_to_matching(true)
+
+    def pairs(m):
+        pairs = set()
+        for i in range(len(m)):
+            if m[i] > i:
+                pairs.add((i, m[i]))
+        return pairs
+    pairs1 = pairs(m1)
+    pairs2 = pairs(m2)
+    tp = 0.0
+    fp = 0.0
+    for p in pairs1:
+        if p in pairs2:
+            tp += 1.0
+        else:
+            fp += 1.0
+    fn = 0.0
+    for p in pairs2:
+        if not p in pairs1:
+            fn += 1.0
+
+    if tp+fp == 0:
+        ppv = 1
+    else:
+        ppv = tp / (tp+fp)
+
+    if tp+fn == 0:
+        sens = 1
+    else:
+        sens = tp / (tp+fn)
+
+    return 1-math.sqrt(ppv*sens)
+
+
 def mfe_dist(pri, db, dist):
     ctx = vienna.ViennaContext(pri)
     return len(db)-dist(ctx.mfe(), db)
@@ -98,3 +136,15 @@ def avg_mfe_hd(pri, db):
 
 def min_mfe_hd(pri, db):
     return min_mfe_dist(pri, db, hamming_dist)
+
+
+def mfe_inf(pri, db):
+    return mfe_dist(pri, db, inv_interaction_network_fidelity)
+
+
+def avg_inf(pri, db):
+    return avg_mfe_dist(pri, db, inv_interaction_network_fidelity)
+
+
+def min_mfe_inf(pri, db):
+    return min_mfe_dist(pri, db, inv_interaction_network_fidelity)
