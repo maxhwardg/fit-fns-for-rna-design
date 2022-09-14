@@ -4,6 +4,7 @@ import adaptive_walk as aw
 import vienna
 import common
 import random
+from multiprocessing import Pool
 
 
 def make_random_db(len, window):
@@ -88,18 +89,19 @@ def main():
         db_solved = []
         for _ in dbs:
             db_solved.append([])
-        for fn_name, fit_fn in fitness_fns.items():
-            res = aw.parallel_walk(
-                dbs, fit_fn, aw.random_batch_guide, args.steps, processes=args.processes)
-            for i in range(len(res)):
-                ctx = vienna.ViennaContext(res[i])
-                subs = ctx.subopt(0)
-                gc_pcnt_sum[fn_name] = gc_pcnt_sum.get(
-                    fn_name, 0) + gc_pcnt(res[i])
-                if len(subs) == 1 and subs[0] == dbs[i]:
-                    db_solved[i].append(fn_name)
-                    fit_fn_solves[fn_name] = fit_fn_solves.get(
-                        fn_name, 0) + 1
+        with Pool(processes=args.processes) as pool:
+            for fn_name, fit_fn in fitness_fns.items():
+                res = pool.starmap(
+                    aw.walk, [(db, fit_fn, aw.random_guide, args.steps, args.seed) for db in dbs])
+                for i in range(len(res)):
+                    ctx = vienna.ViennaContext(res[i])
+                    subs = ctx.subopt(0)
+                    gc_pcnt_sum[fn_name] = gc_pcnt_sum.get(
+                        fn_name, 0) + gc_pcnt(res[i])
+                    if len(subs) == 1 and subs[0] == dbs[i]:
+                        db_solved[i].append(fn_name)
+                        fit_fn_solves[fn_name] = fit_fn_solves.get(
+                            fn_name, 0) + 1
         print("Epoch {}: {}".format(epoch, fit_fn_solves))
         for i, fns in enumerate(db_solved):
             total_seqs += 1
