@@ -38,8 +38,7 @@ def main():
     ap.add_argument("--rna_length", type=int, default=40,
                     help="Length of RNAs to generate")
     all_fit_fns = dict([('probability', fit_fns.probability), ('ensemble_defect', fit_fns.normalised_ensemble_antidefect),
-                        ('free_energy', fit_fns.free_energy), ('probability_diff',
-                                                               fit_fns.normalised_prob_diff),
+                        ('free_energy', fit_fns.free_energy),
                         ('mfe_bpd', fit_fns.mfe_bpd), ('avg_mfe_bpd',
                                                        fit_fns.avg_mfe_bpd), ('min_mfe_bpd', fit_fns.min_mfe_bpd),
                         ('mfe_hd', fit_fns.mfe_hd), ('avg_mfe_hd',
@@ -71,6 +70,7 @@ def main():
             while db is None or db in seen_dbs:
                 db = make_random_db(args.rna_length, args.window)
             rnas.append(db)
+            seen_dbs.add(db)
         epoch_dbs.append(rnas)
 
     # Init statistics counters

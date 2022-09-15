@@ -1,4 +1,3 @@
-from itertools import starmap
 import common
 import random
 
@@ -48,7 +47,7 @@ def walk(db, metric, guide, steps, seed=0, init_pri=None):
             pri, match, valid_mutations(match, pri)))
         if mutated not in scores:
             scores[mutated] = metric(mutated, db)
-        if scores[mutated] > scores[pri]:
+        if scores[mutated] >= scores[pri]:
             pri = mutated
     return pri
 
