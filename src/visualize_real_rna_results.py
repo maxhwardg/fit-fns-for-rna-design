@@ -5,10 +5,10 @@ import numpy as np
 import matplotlib.font_manager as font_manager
 
 def main():
-    pr = [0]*101
-    ed = [0]*101
-    bp = [0]*101
-    hd = [0]*101
+    pr = np.zeros(101)
+    ed = np.zeros(101)
+    bp = np.zeros(101)
+    hd = np.zeros(101)
     for ln in sys.stdin:
         if ln.startswith("Result"):
             break
@@ -23,17 +23,14 @@ def main():
         hd[round(lst[3]*100)] += 1
     x_axis = np.arange(len(pr))
 
-    # Very hacky: just comment/uncomment what you need for the graph
-    p = plt.bar(x_axis, pr, color='b')
-    # e = plt.bar(x_axis, ed, color='r', alpha=0.5)
-    s = plt.bar(x_axis, hd, color='g', alpha=0.5)
+    p = plt.plot(x_axis, np.cumsum(pr), color='b')
+    e = plt.plot(x_axis, np.cumsum(ed), color='r')
+    s = plt.plot(x_axis, np.cumsum(hd), color='g')
     font = {'fontname':'serif'}
-    # plt.legend((p, e), ('Probability', 'Ensemble Defect'), prop=font_manager.FontProperties(family='serif'))
-    plt.legend((p, s), ('Probability', 'Structure Distance'), prop=font_manager.FontProperties(family='serif'))
-    # plt.legend((e,s), ('Ensemble Defect', 'Structure Distance'))
+    plt.legend((p, e, s), ('Probability', 'Ensemble Defect' 'Structure Distance'), prop=font_manager.FontProperties(family='serif'))
 
     plt.xlabel('Relative Rank Percentile', fontdict=font)
-    plt.ylabel('Number of RNAs', fontdict=font)
+    plt.ylabel('Cumulative Number of RNAs', fontdict=font)
     plt.show()
 
 if __name__ == '__main__':

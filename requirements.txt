@@ -1,2 +1,3 @@
 numpy==1.23.3
 ViennaRNA==2.5.0a5
+matplotlib
