@@ -24,12 +24,14 @@ def count_motifs(db):
     children = [[] for _ in range(len(db)+1)]
     for k in par.keys():
         children[par[k]].append(k)
-    res = {"hairpin": 0, "stack": 0, "bulge": 0, "internal": 0, "multi": 0}
+    res = {"pairs": 0, "hairpin": 0, "stack": 0,
+           "bulge": 0, "internal": 0, "multi": 0}
 
     def dfs(l):
         for c in children[l]:
             dfs(c)
         if l != -1:
+            res["pairs"] = res["pairs"] + 1
             if len(children[l]) == 0:
                 res["hairpin"] = res.get("hairpin")+1
             elif len(children[l]) == 1:
