@@ -148,3 +148,28 @@ def avg_inf(pri, db):
 
 def min_mfe_inf(pri, db):
     return min_mfe_dist(pri, db, inv_interaction_network_fidelity)
+
+def gc_content(pri):
+    gc = 0
+    for b in pri:
+        if b == 'G' or b == 'C':
+            gc += 1
+    return gc/len(pri)
+
+def gc_max_control(fit_fn, gc_pcnt, scale=10):
+    def fn(pri, db):
+        fit = fit_fn(pri, db)
+        gc = gc_content(pri)
+        return fit - scale*(math.e**max(0, gc-gc_pcnt)-1)/(math.e-1)*abs(fit)
+    return fn
+
+def gc_control(fit_fn, gc_pcnt, scale=1):
+    def fn(pri, db):
+        fit = fit_fn(pri, db)
+        gc = gc_content(pri)
+        return fit - scale*(math.e**abs(gc-gc_pcnt)-1)/(math.e-1)*abs(fit)
+    return fn
+
+
+def fe_gc_max_50pcnt(pri, db):
+    return gc_max_control(free_energy, 0.5)(pri, db)

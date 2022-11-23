@@ -43,11 +43,15 @@ def main():
                                                        fit_fns.avg_mfe_bpd), ('min_mfe_bpd', fit_fns.min_mfe_bpd),
                         ('mfe_hd', fit_fns.mfe_hd), ('avg_mfe_hd',
                                                      fit_fns.avg_mfe_hd), ('min_mfe_hd', fit_fns.min_mfe_hd),
-                        ('mfe_inf', fit_fns.mfe_inf), ('avg_inf', fit_fns.avg_inf), ('min_mfe_inf', fit_fns.min_mfe_inf)])
+                        ('mfe_inf', fit_fns.mfe_inf), ('avg_inf',
+                                                       fit_fns.avg_inf), ('min_mfe_inf', fit_fns.min_mfe_inf),
+                        ('free_energy_gc_controlled', fit_fns.fe_gc_max_50pcnt)])
     ap.add_argument("--fitness_fns", type=str, default=[], action='append',
                     help=f'Fitness functions to use. Leave empty for all. Should be from {list(all_fit_fns.keys())}')
     ap.add_argument("--seed", type=int, default=0,
                     help="Random seed. Leave empty for no seed.")
+    ap.add_argument("--seed_seq_gc_pcnt", type=float, default=0.5,
+                    help="Probability of picking a G or C when generating the seed sequences for the adaptive walk")
 
     args = ap.parse_args()
 
@@ -63,15 +67,26 @@ def main():
     # Generate puzzles
     seen_dbs = set()
     epoch_dbs = []
-    for _ in range(args.epochs):
-        rnas = []
+    epoch_init_seqs = []
+    curr_seed = args.seed
+    init_gc_content = 0
+    for epoch in range(args.epochs):
+        dbs = []
+        init_seqs = []
         for _ in range(args.rnas_per_epoch):
             db = None
             while db is None or db in seen_dbs:
                 db = make_random_db(args.rna_length, args.window)
-            rnas.append(db)
+            dbs.append(db)
+            init_seqs.append(aw.walk(db, fit_fns.gc_control(
+                lambda x, y: 1, args.seed_seq_gc_pcnt), aw.random_guide, 100, curr_seed))
+            curr_seed += 1
+            init_gc_content += fit_fns.gc_content(init_seqs[-1])
             seen_dbs.add(db)
-        epoch_dbs.append(rnas)
+        epoch_dbs.append(dbs)
+        epoch_init_seqs.append(init_seqs)
+
+    print(f"Average GC content in initial sequences: {init_gc_content/(args.epochs*args.rnas_per_epoch)}")
 
     # Init statistics counters
     gc_pcnt_sum = {}
@@ -86,13 +101,14 @@ def main():
     total_seqs = 0
     for epoch in range(args.epochs):
         dbs = epoch_dbs[epoch]
+        init_seq = epoch_init_seqs[epoch]
         db_solved = []
         for _ in dbs:
             db_solved.append([])
         with Pool(processes=args.processes) as pool:
             for fn_name, fit_fn in fitness_fns.items():
                 res = pool.starmap(
-                    aw.walk, [(db, fit_fn, aw.random_guide, args.steps, args.seed) for db in dbs])
+                    aw.walk, [(dbs[i], fit_fn, aw.random_guide, args.steps, curr_seed+i, init_seq[i]) for i in range(len(dbs))])
                 for i in range(len(res)):
                     ctx = vienna.ViennaContext(res[i])
                     subs = ctx.subopt(0)
@@ -104,6 +120,7 @@ def main():
                             fn_name, 0) + 1
         print("Epoch {}: {}".format(epoch, fit_fn_solves))
         for i, fns in enumerate(db_solved):
+            curr_seed += 1
             total_seqs += 1
             if len(fns) == 1:
                 unique_solves[fns[0]] = unique_solves.get(fns[0], 0) + 1
