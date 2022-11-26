@@ -79,7 +79,7 @@ def main():
                 db = make_random_db(args.rna_length, args.window)
             dbs.append(db)
             init_seqs.append(aw.walk(db, fit_fns.gc_control(
-                lambda x, y: 1, args.seed_seq_gc_pcnt), aw.random_guide, 100, curr_seed))
+                lambda x, y: 1, args.seed_seq_gc_pcnt), aw.random_guide, args.rna_length*2, curr_seed))
             curr_seed += 1
             init_gc_content += fit_fns.gc_content(init_seqs[-1])
             seen_dbs.add(db)
