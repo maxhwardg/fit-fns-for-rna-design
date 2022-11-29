@@ -44,22 +44,29 @@ def count_motifs(db):
             else:
                 res["multi"] = res.get("multi")+1
     dfs(-1)
+    res["helix"] = res["hairpin"] + res["bulge"] + res["internal"] + res["multi"]
     return res
 
 
 def main():
     tots = count_motifs("")
     dbs = 0
+    nucs = 0
     for ln in sys.stdin:
         toks = ln.strip().split(" ")
         for t in toks:
             if is_db(t):
                 dbs += 1
+                nucs = len(t)
                 res = count_motifs(t)
                 for k in res.keys():
                     tots[k] = tots[k] + res[k]
     print("dbs seen: ", dbs)
-    print(tots)
+    print("Raw totals", tots)
+    print("Paired percent", tots["pairs"]*2/dbs/nucs)
+    for k in tots.keys():
+        tots[k] = round(tots[k]/dbs, 2)
+    print("Averages", tots)
 
 
 if __name__ == "__main__":

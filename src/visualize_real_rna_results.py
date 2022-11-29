@@ -23,10 +23,12 @@ def main():
         bp[round(lst[2]*buckets)] += 1
         hd[round(lst[3]*buckets)] += 1
     x_axis = np.arange(len(pr))
+    
+    line_width = 3
 
-    p, = plt.plot(x_axis, np.cumsum(pr), color='b')
-    e, = plt.plot(x_axis, np.cumsum(ed), color='r')
-    s, = plt.plot(x_axis, np.cumsum(hd), color='g')
+    p, = plt.plot(x_axis, np.cumsum(pr), color='b', linewidth=line_width)
+    e, = plt.plot(x_axis, np.cumsum(ed), color='r', linewidth=line_width)
+    s, = plt.plot(x_axis, np.cumsum(hd), color='g', linewidth=line_width)
     font = {'fontname':'serif'}
     plt.legend((p, e, s), ('Probability', 'Ensemble Defect', 'Structure Distance'), prop=font_manager.FontProperties(family='serif'))
 
